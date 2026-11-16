@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>FREIGHTLINE — Yard 7 Tactical</title>
+<style>
+  html,body{margin:0;padding:0;height:100%;overflow:hidden;background:#1a140f;font-family:Arial,Helvetica,sans-serif;color:#f3ead8}
+  #app{position:fixed;inset:0}
+  canvas{display:block}
+  .panel{position:absolute;background:rgba(16,13,10,.88);border:1px solid #8a6f3c;border-radius:10px;padding:22px 28px}
+  #menu{left:50%;top:50%;transform:translate(-50%,-50%);text-align:center;z-index:30;min-width:420px}
+  #menu h1{font-size:52px;letter-spacing:6px;margin:0 0 4px;color:#ffcf4d;text-shadow:0 3px 0 #6e4a12}
+  #menu p{margin:6px 0;color:#d8c9a8;line-height:1.5}
+  .btn{display:inline-block;margin-top:14px;padding:12px 34px;background:#c9862b;color:#1a140f;font-weight:bold;font-size:18px;border:none;border-radius:6px;cursor:pointer}
+  .btn:hover{background:#eda83e}
+  #hud{position:absolute;inset:0;pointer-events:none;z-index:10}
+  #bottomLeft{position:absolute;left:22px;bottom:20px;font-size:15px;text-shadow:0 1px 3px #000}
+  #hp{font-size:34px;font-weight:bold}
+  .bar{width:190px;height:9px;background:rgba(0,0,0,.55);border:1px solid #000;margin:3px 0 7px}
+  .bar>i{display:block;height:100%;background:#7ec850}
+  #armorBar>i{background:#5aa7e8}
+  #bottomRight{position:absolute;right:22px;bottom:20px;text-align:right;text-shadow:0 1px 3px #000}
+  #ammo{font-size:32px;font-weight:bold}
+  #money{color:#9fe870;font-weight:bold;font-size:19px}
+  #topCenter{position:absolute;top:12px;left:50%;transform:translateX(-50%);text-align:center;text-shadow:0 1px 3px #000}
+  #timer{font-size:28px;font-weight:bold}
+  #scores{font-size:17px}
+  #scores b{color:#ffa04d}#scores span{color:#7db8ff}
+  #killfeed{position:absolute;top:14px;right:18px;text-align:right;font-size:14px;line-height:1.55;text-shadow:0 1px 3px #000}
+  #crosshair{position:absolute;left:50%;top:50%;width:0;height:0;--sp:8px}
+  #crosshair i{position:absolute;background:#b6ff9e;box-shadow:0 0 2px #000}
+  #crosshair .t{left:-1px;top:calc(-1 * var(--sp) - 9px);width:2px;height:8px}
+  #crosshair .b{left:-1px;top:calc(var(--sp) + 1px);width:2px;height:8px}
+  #crosshair .l{top:-1px;left:calc(-1 * var(--sp) - 9px);height:2px;width:8px}
+  #crosshair .r{top:-1px;left:calc(var(--sp) + 1px);height:2px;width:8px}
+  #hitmarker{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%) rotate(45deg);font-size:26px;opacity:0;transition:opacity .12s}
+  #dmgDir{position:absolute;left:50%;top:50%;width:120px;height:120px;opacity:0;transition:opacity .3s;pointer-events:none}
+  #dmgDir:before{content:'';position:absolute;left:50%;top:-6px;transform:translateX(-50%);border:11px solid transparent;border-bottom:20px solid rgba(255,60,40,.85)}
+  #banner{position:absolute;left:50%;top:26%;transform:translateX(-50%);text-align:center;z-index:20;text-shadow:0 2px 8px #000}
+  #bannerTitle{font-size:44px;font-weight:bold;letter-spacing:3px;color:#ffcf4d}
+  #bannerSub{font-size:19px;color:#fff}
+  #centerMsg{position:absolute;left:50%;top:60%;transform:translateX(-50%);font-size:19px;opacity:0;transition:opacity .25s;text-shadow:0 1px 4px #000}
+  #interact{position:absolute;left:50%;top:56%;transform:translateX(-50%);width:280px;text-align:center}
+  #interact .track{height:10px;background:rgba(0,0,0,.6);border:1px solid #ffcf4d;margin-top:5px}
+  #interactBar{height:100%;width:0;background:#ffcf4d}
+  #bombWarn{position:absolute;top:64px;left:50%;transform:translateX(-50%);color:#ff5a3c;font-weight:bold;font-size:19px;text-shadow:0 1px 4px #000}
+  #buyMenu{left:50%;top:50%;transform:translate(-50%,-50%);z-index:25;width:600px}
+  #buyMenu h2{margin:0 0 4px;color:#ffcf4d}
+  #buyGrid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px}
+  .buyItem{background:rgba(255,255,255,.07);border:1px solid #6b5836;border-radius:6px;padding:10px 12px;cursor:pointer;font-size:15px}
+  .buyItem:hover{background:rgba(255,207,77,.18)}
+  .buyItem small{display:block;color:#cbbd97}
+  .buyItem.owned{opacity:.55}
+  #scoreboard{left:50%;top:50%;transform:translate(-50%,-50%);z-index:26;width:560px}
+  #scoreboard table{width:100%;border-collapse:collapse;font-size:15px}
+  #scoreboard td,#scoreboard th{padding:5px 8px;border-bottom:1px solid #4a3d24;text-align:left}
+  #scoreboard tr.me td{color:#ffcf4d;font-weight:bold}
+  #scope{position:absolute;inset:0;background:radial-gradient(circle at center,transparent 170px,#000 175px);z-index:9;pointer-events:none}
+  #flash{position:absolute;inset:0;background:#fff8ea;opacity:0;z-index:15;pointer-events:none}
+  #matchEnd{left:50%;top:50%;transform:translate(-50%,-50%);text-align:center;z-index:30;min-width:400px}
+  #matchTitle{font-size:42px;color:#ffcf4d;margin:0}
+  #helpLine{position:absolute;bottom:4px;left:50%;transform:translateX(-50%);font-size:12px;color:rgba(255,255,255,.55);white-space:nowrap}
+</style>
+<script type="importmap">
+{ "imports": { "three": "./vendor/three/three.module.min.js" } }
+</script>
+</head>
+<body>
+<div id="app"></div>
+
+<div id="menu" class="panel">
+  <h1>FREIGHTLINE</h1>
+  <p><b>Yard 7 Tactical</b> — five against five in a sunlit freight yard.<br>
+  Attackers plant the breach charge at <b style="color:#ffa04d">Site A · Fuel Depot</b> or <b style="color:#7db8ff">Site B · Loading Dock</b>.<br>
+  Defenders run the clock down or defuse. First team to <b>9 rounds</b> takes the yard.</p>
+  <p style="font-size:14px">WASD move · Mouse aim · Shift sprint · Ctrl crouch · Space jump<br>
+  B buy menu · R reload · 1/2 weapons · G frag · V smoke · E plant / defuse · Tab scores</p>
+  <button class="btn" id="playBtn">DEPLOY TO YARD 7</button>
+</div>
+
+<div id="hud" style="display:none">
+  <div id="topCenter">
+    <div id="timer">1:40</div>
+    <div id="scores"><b id="scoreAtk">0</b> &nbsp;ATK — DEF&nbsp; <span id="scoreDef">0</span></div>
+    <div id="roundLabel" style="font-size:13px;color:#e8dcc0">Round 1</div>
+  </div>
+  <div id="bombWarn" style="display:none">⚠ CHARGE PLANTED — <span id="plantedTimer">40</span>s</div>
+  <div id="killfeed"></div>
+  <div id="bottomLeft">
+    <div id="hp">100</div>
+    <div class="bar"><i id="hpBar" style="width:100%"></i></div>
+    <div style="font-size:13px">ARMOR <span id="armor">0</span></div>
+    <div class="bar" id="armorBar"><i id="armorFill" style="width:0%"></i></div>
+    <div id="teamAlive" style="font-size:13px;color:#e8dcc0"></div>
+  </div>
+  <div id="bottomRight">
+    <div id="money">$800</div>
+    <div id="weaponName">P9 Sidearm</div>
+    <div id="ammo">12 / 48</div>
+    <div id="grenades" style="font-size:13px"></div>
+  </div>
+  <div id="crosshair"><i class="t"></i><i class="b"></i><i class="l"></i><i class="r"></i></div>
+  <div id="hitmarker">✕</div>
+  <div id="dmgDir"></div>
+  <div id="centerMsg"></div>
+  <div id="interact" style="display:none"><div class="ilabel">Planting…</div><div class="track"><div id="interactBar"></div></div></div>
+  <div id="helpLine">B buy · E plant/defuse · G frag · V smoke · Tab scoreboard</div>
+</div>
+
+<div id="banner" style="display:none"><div id="bannerTitle"></div><div id="bannerSub"></div></div>
+
+<div id="buyMenu" class="panel" style="display:none">
+  <h2>BUY MENU</h2>
+  <div>Funds: <b id="buyMoney" style="color:#9fe870">$800</b> — click to buy, B or Esc to close. Buys are instant.</div>
+  <div id="buyGrid"></div>
+</div>
+
+<div id="scoreboard" class="panel" style="display:none">
+  <h2 style="margin-top:0;color:#ffcf4d">SCOREBOARD</h2>
+  <table><thead><tr><th>Player</th><th>Team</th><th>K</th><th>D</th><th>Money</th><th>Status</th></tr></thead><tbody id="sbBody"></tbody></table>
+</div>
+
+<div id="scope" style="display:none"></div>
+<div id="scopeHint" style="display:none"></div>
+<div id="minimap" style="display:none"></div>
+<div id="flash"></div>
+
+<div id="matchEnd" class="panel" style="display:none">
+  <h2 id="matchTitle">VICTORY</h2>
+  <p id="matchSub"></p>
+  <button class="btn" id="againBtn">PLAY AGAIN</button>
+</div>
+
+<script type="module" src="./src/main.js"></script>
+</body>
+</html>
